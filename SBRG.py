@@ -1,8 +1,10 @@
 import random
 from operator import attrgetter
-from itertools import combinations
+from itertools import combinations, product
 from copy import deepcopy
 from numba import jit
+
+from qutip import *
 # helpful function
 def lorentz_line(w, x, delta=0.01):
     return delta/(delta**2 + (w-x)**2)/np.pi
@@ -1555,7 +1557,11 @@ def oneDimOpenChain(L, **para):
     return model
 ############################### HYH ###############################
 # Use Qutip package to do ED, and transform SBRG to Qutip
-
+paulis=[]
+paulis.append(Qobj([[1,0],[0,1]]))
+paulis.append(Qobj([[0,1],[1,0]]))
+paulis.append(Qobj([[0,-1j], [1j,0]]))
+paulis.append(Qobj([[1, 0], [0, -1]]))
 def Term_to_Mat(num_qubit, Term):
     '''
     Term is defined in SBRG doc,
@@ -1575,14 +1581,14 @@ def Term_to_Mat(num_qubit, Term):
     pauli_str = list(pauli_str.astype(int))
     #print('pauli str:', pauli_str)
     return tensor([paulis[j] for j in pauli_str])*Term.val
-def system_Ham_to_qutip_Ham(system_size, system_Ham):
+def system_Ham_to_qutip_Ham(system_size, Ham):
     '''
     system.Ham is a list of Terms in SBRG doc
     '''
-    H = Qobj(np.zeros((2**system_size, 2**system_size)).tolist)
-    for term_id in range(len(system_Ham)):
-#         print('process: {}%'.format((term_id+1)/len(system_Ham)*100))
-        #clear_output(wait=True)
+    system_Ham = Ham.terms
+    H = Term_to_Mat(system_size,system_Ham[0])
+#     H = Qobj(np.zeros((2**system_size, 2**system_size)).tolist)
+    for term_id in range(1,len(system_Ham)):
         H += Term_to_Mat(system_size,system_Ham[term_id])
     return H
 def system_RCC_to_qutip_RCC(system_size, system_RCC):
@@ -1726,57 +1732,57 @@ def load_model(filename):
                             set(read_data['{}Zs'.format(i)])),read_data['{}val'.format(i)]))
     return read_model
 ############################### HYH ###############################
-def Term_to_Mat(num_qubit, Term):
-    '''
-    Term is defined in SBRG doc,
-    Mat is Qobj defined in Qutip
-    '''
-    pauli_str = np.zeros(num_qubit)
-    list_Xs = list(Term.mat.Xs)
-    list_Zs = list(Term.mat.Zs)
-    # Find Ys locations
-    inter_set = set(list_Xs).intersection(set(list_Zs))
-    list_Ys = list(inter_set)
-    new_list_Xs = list(set(list_Xs)^inter_set)
-    new_list_Zs = list(set(list_Zs)^inter_set)
-    pauli_str[new_list_Xs] = np.ones(len(new_list_Xs))
-    pauli_str[list_Ys] = np.ones(len(list_Ys))*2
-    pauli_str[new_list_Zs] = np.ones(len(new_list_Zs))*3
-    pauli_str = list(pauli_str.astype(int))
-    #print('pauli str:', pauli_str)
-    return tensor([paulis[j] for j in pauli_str])*Term.val
-def system_Ham_to_qutip_Ham(system_size, system_Ham):
-    '''
-    system.Ham is a list of Terms in SBRG doc
-    '''
-    H = Qobj(np.zeros((2**system_size, 2**system_size)).tolist)
-    for term_id in range(len(system_Ham)):
-#         print('process: {}%'.format((term_id+1)/len(system_Ham)*100))
-        #clear_output(wait=True)
-        H += Term_to_Mat(system_size,system_Ham[term_id])
-    return H
-def system_RCC_to_qutip_RCC(system_size, system_RCC):
-    '''
-    system_RCC is a list of Terms in SBRG doc
-    Urcc = R1R2R3...
-    '''
-    RCC = ((1j*np.pi/4)*Term_to_Mat(system_size, system_RCC[0])).expm()
-    for i in range(1, len(system_RCC)):
-        RCC = RCC*((1j*np.pi/4)*Term_to_Mat(system_size, system_RCC[i])).expm()
-    return RCC
-def get_full_spectrum(SBRG_res):
-    '''
-    SBRG_res is an object of SBRG class
-    '''
-    list_basis = list(product([-1,1],repeat = SBRG_res.size))
-    spectrum = []
-    for basis_id in range(0, len(list_basis)):
-        energy = 0
-        for Heff_id in range(0, len(SBRG_res.Heff)):
-            list_of_taus = list(SBRG_res.Heff[Heff_id].mat.Zs)
-            energy += np.prod(np.asarray(list_basis[basis_id])[np.asarray(list_of_taus)])*SBRG_res.Heff[Heff_id].val
-        spectrum.append(energy)
-    return spectrum
+# def Term_to_Mat(num_qubit, Term):
+#     '''
+#     Term is defined in SBRG doc,
+#     Mat is Qobj defined in Qutip
+#     '''
+#     pauli_str = np.zeros(num_qubit)
+#     list_Xs = list(Term.mat.Xs)
+#     list_Zs = list(Term.mat.Zs)
+#     # Find Ys locations
+#     inter_set = set(list_Xs).intersection(set(list_Zs))
+#     list_Ys = list(inter_set)
+#     new_list_Xs = list(set(list_Xs)^inter_set)
+#     new_list_Zs = list(set(list_Zs)^inter_set)
+#     pauli_str[new_list_Xs] = np.ones(len(new_list_Xs))
+#     pauli_str[list_Ys] = np.ones(len(list_Ys))*2
+#     pauli_str[new_list_Zs] = np.ones(len(new_list_Zs))*3
+#     pauli_str = list(pauli_str.astype(int))
+#     #print('pauli str:', pauli_str)
+#     return tensor([paulis[j] for j in pauli_str])*Term.val
+# def system_Ham_to_qutip_Ham(system_size, system_Ham):
+#     '''
+#     system.Ham is a list of Terms in SBRG doc
+#     '''
+#     H = Qobj(np.zeros((2**system_size, 2**system_size)).tolist)
+#     for term_id in range(len(system_Ham)):
+# #         print('process: {}%'.format((term_id+1)/len(system_Ham)*100))
+#         #clear_output(wait=True)
+#         H += Term_to_Mat(system_size,system_Ham[term_id])
+#     return H
+# def system_RCC_to_qutip_RCC(system_size, system_RCC):
+#     '''
+#     system_RCC is a list of Terms in SBRG doc
+#     Urcc = R1R2R3...
+#     '''
+#     RCC = ((1j*np.pi/4)*Term_to_Mat(system_size, system_RCC[0])).expm()
+#     for i in range(1, len(system_RCC)):
+#         RCC = RCC*((1j*np.pi/4)*Term_to_Mat(system_size, system_RCC[i])).expm()
+#     return RCC
+# def get_full_spectrum(SBRG_res):
+#     '''
+#     SBRG_res is an object of SBRG class
+#     '''
+#     list_basis = list(product([-1,1],repeat = SBRG_res.size))
+#     spectrum = []
+#     for basis_id in range(0, len(list_basis)):
+#         energy = 0
+#         for Heff_id in range(0, len(SBRG_res.Heff)):
+#             list_of_taus = list(SBRG_res.Heff[Heff_id].mat.Zs)
+#             energy += np.prod(np.asarray(list_basis[basis_id])[np.asarray(list_of_taus)])*SBRG_res.Heff[Heff_id].val
+#         spectrum.append(energy)
+#     return spectrum
 
 
 
