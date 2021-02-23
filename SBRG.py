@@ -91,8 +91,6 @@ def mkMaj(Mat):
 ############################### HYH ###############################
 
 
-
-
 # commutativity check
 def is_commute(mat1, mat2):
     return (len(mat1.Xs & mat2.Zs) - len(mat1.Zs & mat2.Xs))%2 == 0
@@ -690,26 +688,6 @@ class SBRG:
                 # if not isinstance(struc_chf[(n,m)], int):
                     spectrum += struc_chf[str(n)+"-"+str(m)][0] * lorentz_line(omega, struc_chf[str(n)+"-"+str(m)][1], delta)
         return spectrum/self.size*2
-    # spin spectrum function in (q,\omega) space.
-    #def Sqw(self, struc_chf, q2ijs, omegas, delta):
-        '''<input>: struc_chf : dict, see two_spin_chf(2) 
-                omegas: 1D array
-                q2ijs : list with dict as elements
-                delta: float
-        '''
-        #spectrum = np.zeros( (len(omegas), len(q2ijs)))
-        #for _, q in enumerate(q2ijs):
-            ##print(q)
-            #for i in range(self.size):
-                #for j in range(self.size):
-                    #if len(struc_chf[str(i)+"-"+str(j)])!=0:
-                    ## if not isinstance(struc_chf[str(i)+"-"+str(j)], int):
-                        ##key = (i,j)
-                        #key = str(i)+"-"+str(j)
-                        #spectrum[:, _] += (lorentz_line(omegas, struc_chf[key][1], delta) * struc_chf[key][0] * (np.exp(1j*q[key])).real )
-                        #print(np.cos(q2ij[key]))
-
-        #return spectrum/self.size
 
     def Sqw(self, struc_chf, q2ijs, omegas, delta,use_box):
         '''<input>: struc_chf : dict, see two_spin_chf(2) 
@@ -795,11 +773,7 @@ class SBRG:
         else:
             print('q2ijs should be a list of dict or zero')
             return 
-                    
-        
-        
-        
-        
+                       
     
         
 ''' Model: defines Hilbert space and Hamiltonian
@@ -941,70 +915,7 @@ def Kitaev(lx, ly, **para):
                            para['jz']*rnd_beta(alpha_Jz)) )
     model.terms = [term for term in model.terms if abs(term.val) > 0]
     return model
-def Kitaev_perturbation(lx, ly, **para):
-    # lx - lattice size in x direction
-    # ly - lattice size in y direction
-    try: # set parameter alpha
-        alpha = para['alpha']
-        alpha_J = alpha
-        alpha_Kx = alpha
-        alpha_Ky = alpha
-        alpha_Kz = alpha
-        alpha_Gx = alpha
-        alpha_Gy = alpha
-        alpha_Gz = alpha
-    except:
-        alpha_Kx = para.get('alpha_kx',1)
-        alpha_Ky = para.get('alpha_ky',1)
-        alpha_Kz = para.get('alpha_kz',1)
-        alpha_J = para.get('alpha_j',1)
-        alpha_Gx = para.get('alpha_gx',1)
-        alpha_Gy = para.get('alpha_gy',1)
-        alpha_Gz = para.get('alpha_gz',1)
-    model = Model()
-    model.size = lx*ly*2
-    model.n = lx*ly
-    model.lx = lx
-    model.ly = ly
-    n = lx*ly
-    H_append = model.terms.append
-    #rnd_beta = random.betavariate
-    for ix in range(lx):
-        for iy in range(ly):
-            site_A = ix + iy*lx
-            site_B = ix + iy*lx + n
-            site_B_mx = (ix-1)%lx + (iy)*lx + n
-            site_B_my = ix + ((iy-1)%ly)*lx + n
-            H_append( Term(mkMat({site_A: 1, site_B: 1}),
-                           para['kx']*rnd_beta(alpha_Kx)) )
-            H_append( Term(mkMat({site_A: 2, site_B: 3}),
-                           para['gx']*rnd_beta(alpha_Gx)) )
-            H_append( Term(mkMat({site_A: 3, site_B: 2}),
-                           para['gx']*rnd_beta(alpha_Gx)) )
-            
-            H_append( Term(mkMat({site_A: 2, site_B_mx: 2}),
-                           para['ky']*rnd_beta(alpha_Ky)) )
-            H_append( Term(mkMat({site_A: 1, site_B_mx: 3}),
-                           para['gx']*rnd_beta(alpha_Gx)) )
-            H_append( Term(mkMat({site_A: 3, site_B_mx: 1}),
-                           para['gx']*rnd_beta(alpha_Gx)) )
 
-            H_append( Term(mkMat({site_A: 3, site_B_my: 3}),
-                           para['kz']*rnd_beta(alpha_Kz)) )
-            H_append( Term(mkMat({site_A: 1, site_B_my: 2}),
-                           para['gx']*rnd_beta(alpha_Gx)) )
-            H_append( Term(mkMat({site_A: 2, site_B_my: 1}),
-                           para['gx']*rnd_beta(alpha_Gx)) )
-
-            for xyz in range(1,4):
-                H_append( Term(mkMat({site_A: xyz, site_B: xyz}),
-                            para['j']*rnd_beta(alpha_Kx)) )                
-                H_append( Term(mkMat({site_A: xyz, site_B_mx: xyz}),
-                            para['j']*rnd_beta(alpha_Kx)) )                
-                H_append( Term(mkMat({site_A: xyz, site_B_my: xyz}),
-                            para['j']*rnd_beta(alpha_Kx)) )                
-    model.terms = [term for term in model.terms if abs(term.val) > 0]
-    return model
 def triangular_XYZ(Lx,Ly, **para):
     # assuming PBC 
     alpha = para['alpha']
@@ -1133,32 +1044,7 @@ def square_XYZ(Lx,Ly, **para):
             H_append(Term( mkMat({coor_to_id(i,j):3, coor_to_id(i,(j+1)%Ly):3}),coef_Jz ))
     model.terms = [term for term in model.terms if abs(term.val) > 0]
     return model    
-# def sparse_triangular_XYZ(Lx, Ly, **para):
-#     alpha = para['alpha']
-#     alpha_X = alpha
-#     alpha_Y = alpha
-#     alpha_Z = alpha
-#     model = Model()
-#     model.size = Lx*Ly
-#     model.lx = Lx
-#     model.ly = Ly
-#     H_append = model.terms.append
-#     rand_uni = np.random.uniform
-#     coor_to_id = lambda x,y: y*Lx + x
-#     id2j = {1:'jx', 2:'jy', 3:'jz'}
-#     for i in range(Lx):
-#         for j in range(Ly):
-#             xyz = np.random.randint(1,4)
-#             coef_j = rnd_beta(alpha)*para[id2j[xyz]]
-#             H_append(Term( mkMat({coor_to_id(i,j):xyz, coor_to_id((i+1)%Lx,j):xyz}),coef_j ))
-#             xyz = np.random.randint(1,4)
-#             coef_j = rnd_beta(alpha)*para[id2j[xyz]]
-#             H_append(Term( mkMat({coor_to_id(i,j):xyz, coor_to_id(i,(j+1)%Ly):xyz}),coef_j ))
-#             xyz = np.random.randint(1,4)
-#             coef_j = rnd_beta(alpha)*para[id2j[xyz]]
-#             H_append(Term( mkMat({coor_to_id(i,j):xyz, coor_to_id((i-1)%Lx, (j+1)%Ly):xyz}),coef_j ))
-#     model.terms = [term for term in model.terms if abs(term.val) > 0]
-#     return model
+
 def sparse_triangular_XYZ(Lx, Ly, **para):
     eps = 1e-10
     alpha = para['alpha']
@@ -1314,12 +1200,6 @@ def J1J2_trilattice_sparse_triangular_XYZ(Lx, Ly, **para):
     coor_to_id = lambda x,y: y*Lx + x
     id2j1 = {1:'j1x', 2:'j1y', 3:'j1z'}
     id2j2 = {1:'j2x', 2:'j2y', 3:'j2z'}
-    # j1x = para['j1x']
-    # j2x = para['j2x']
-    # j1y = para['j1y']
-    # j2y = para['j2y']
-    # j1z = para['j1z']
-    # j2z = para['j2z']
     for i in range(Lx):
         for j in range(Ly):
             xyz = np.random.randint(1,4)
