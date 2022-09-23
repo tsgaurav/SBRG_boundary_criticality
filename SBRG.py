@@ -785,8 +785,10 @@ class Model:
         self.size = 0
         self.terms = []
 '''the beta function from uniform distribution'''
+
 def rnd_beta(alpha):
     return np.random.rand()**(1./alpha) if alpha > 0 else 1
+
 # quantum Ising model
 def TFIsing(L, **para):
     # L - number of sites (assuming PBC)
@@ -804,7 +806,7 @@ def TFIsing(L, **para):
     model.size = L
     # translate over the lattice by deque rotation
     H_append = model.terms.append
-    #rnd_beta = random.betavariate
+    rnd_beta = random.betavariate
     for i in range(L):
         H_append(Term(mkMat({i: 1, (i+1)%L: 1}), para['J']*rnd_beta(alpha_J, 1)))
         H_append(Term(mkMat({i: 3, (i+1)%L: 3}), para['K']*rnd_beta(alpha_K, 1)))
